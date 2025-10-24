@@ -2,10 +2,13 @@
 Configuration Module
 
 Centralized configuration for RAG system paths, models, and parameters.
+Loads from config.yaml for client-specific customization.
 """
 
 from pathlib import Path
 import os
+import yaml
+from typing import Dict, Any
 
 
 class Config:
@@ -13,11 +16,17 @@ class Config:
 
     # Project paths
     PROJECT_ROOT = Path(__file__).parent.parent
+    CONFIG_FILE = PROJECT_ROOT / "config.yaml"
     DATA_DIR = PROJECT_ROOT / "data"
     INDICES_DIR = PROJECT_ROOT / "indices"
     DOCS_DIR = PROJECT_ROOT / "docs"
 
-    # Data files
+    # Default data paths
+    CLIENT_CONTENT_DIR = DATA_DIR / "client_content"
+    SAMPLE_DATA_DIR = DATA_DIR / "sample"
+    EXAMPLES_DIR = DATA_DIR / "examples"
+
+    # Backward compatibility
     CONTENT_FILE = DATA_DIR / "content.txt"
 
     # Index files
@@ -25,41 +34,175 @@ class Config:
     CHUNKS_FILE = INDICES_DIR / "chunks.pkl"
     METADATA_FILE = INDICES_DIR / "metadata.json"
 
-    # Embedding model
-    EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
-    EMBEDDING_DIMENSION = 384
+    # Configuration cache
+    _config_data: Dict[str, Any] = None
+
+    @classmethod
+    def load_config(cls) -> Dict[str, Any]:
+        """Load configuration from config.yaml file."""
+        if cls._config_data is None:
+            if cls.CONFIG_FILE.exists():
+                with open(cls.CONFIG_FILE, 'r', encoding='utf-8') as f:
+                    cls._config_data = yaml.safe_load(f)
+            else:
+                # Return default configuration if file doesn't exist
+                cls._config_data = cls._get_default_config()
+        return cls._config_data
+
+    @classmethod
+    def _get_default_config(cls) -> Dict[str, Any]:
+        """Return default configuration when config.yaml doesn't exist."""
+        return {
+            'company': {
+                'name': 'Your Company',
+                'contact': {'email': 'contact@example.com'}
+            },
+            'language': {'primary': 'en', 'assistant_name': 'AI Assistant'},
+            'system_prompt': {
+                'role': 'professional assistant',
+                'instructions': 'You are a helpful AI assistant.'
+            },
+            'rag': {
+                'chunk_size': 500,
+                'chunk_overlap': 50,
+                'top_k': 3,
+                'batch_size': 32
+            },
+            'embedding': {
+                'model': 'paraphrase-multilingual-MiniLM-L12-v2',
+                'dimension': 384
+            },
+            'llm': {
+                'provider': 'deepseek',
+                'model': 'deepseek-chat',
+                'temperature': 0.3,
+                'max_tokens': 500,
+                'api_base': 'https://api.deepseek.com/v1'
+            },
+            'ui': {
+                'title': 'Knowledge Base Assistant',
+                'page_icon': '🤖',
+                'show_sources': True
+            },
+            'data': {
+                'input_folder': 'data/client_content',
+                'supported_formats': ['txt', 'pdf', 'docx', 'md']
+            }
+        }
+
+    @classmethod
+    def get(cls, key_path: str, default=None):
+        """
+        Get configuration value using dot notation.
+
+        Example: Config.get('company.name') or Config.get('rag.chunk_size')
+        """
+        config = cls.load_config()
+        keys = key_path.split('.')
+        value = config
+
+        for key in keys:
+            if isinstance(value, dict) and key in value:
+                value = value[key]
+            else:
+                return default
+
+        return value
+
+    # Embedding model properties
+    @classmethod
+    @property
+    def EMBEDDING_MODEL(cls) -> str:
+        return cls.get('embedding.model', 'paraphrase-multilingual-MiniLM-L12-v2')
+
+    @classmethod
+    @property
+    def EMBEDDING_DIMENSION(cls) -> int:
+        return cls.get('embedding.dimension', 384)
 
     # Chunking parameters
-    CHUNK_SIZE = 500  # characters
-    CHUNK_OVERLAP = 50  # characters
+    @classmethod
+    @property
+    def CHUNK_SIZE(cls) -> int:
+        return cls.get('rag.chunk_size', 500)
+
+    @classmethod
+    @property
+    def CHUNK_OVERLAP(cls) -> int:
+        return cls.get('rag.chunk_overlap', 50)
 
     # Retrieval parameters
-    TOP_K = 3  # Number of chunks to retrieve
-    BATCH_SIZE = 32  # Batch size for embedding generation
+    @classmethod
+    @property
+    def TOP_K(cls) -> int:
+        return cls.get('rag.top_k', 3)
+
+    @classmethod
+    @property
+    def BATCH_SIZE(cls) -> int:
+        return cls.get('rag.batch_size', 32)
 
     # DeepSeek API
     DEEPSEEK_API_KEY_ENV = "DEEPSEEK_API_KEY"
-    DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_API_BASE", "https://api.deepseek.com/v1")
-    DEEPSEEK_MODEL = "deepseek-chat"
-    DEEPSEEK_TEMPERATURE = 0.3
-    DEEPSEEK_MAX_TOKENS = 500
 
-    # System prompt
-    SYSTEM_PROMPT = """Sei l'assistente virtuale ufficiale di Viaggiare Bucarest, un tour operator italiano in Romania con oltre 30 anni di esperienza (dal 1991).
+    @classmethod
+    @property
+    def DEEPSEEK_BASE_URL(cls) -> str:
+        # Environment variable takes precedence
+        env_url = os.getenv("DEEPSEEK_API_BASE")
+        if env_url:
+            return env_url
+        return cls.get('llm.api_base', 'https://api.deepseek.com/v1')
 
-Il tuo ruolo:
-- Fornire supporto promozionale e assistenza ai clienti in italiano
-- Rispondere alle domande sui tour, prezzi, destinazioni e servizi
-- Essere entusiasta, cordiale e professionale
-- Utilizzare SOLO le informazioni fornite nel contesto
-- Quando rilevante, includere i contatti: +40 774621133, +40 774621205, viaggiareabucarest@yahoo.com
+    @classmethod
+    @property
+    def DEEPSEEK_MODEL(cls) -> str:
+        return cls.get('llm.model', 'deepseek-chat')
 
-Regole importanti:
-- Rispondi SOLO basandoti sul contesto fornito
-- Se l'informazione non è nel contesto, dillo chiaramente
-- Mantieni un tono promozionale ma genuino
-- Parla sempre in italiano
-- Sii conciso ma completo"""
+    @classmethod
+    @property
+    def DEEPSEEK_TEMPERATURE(cls) -> float:
+        return cls.get('llm.temperature', 0.3)
+
+    @classmethod
+    @property
+    def DEEPSEEK_MAX_TOKENS(cls) -> int:
+        return cls.get('llm.max_tokens', 500)
+
+    # System prompt - now dynamic
+    @classmethod
+    @property
+    def SYSTEM_PROMPT(cls) -> str:
+        """Generate system prompt from config.yaml template."""
+        config = cls.load_config()
+        company_name = config.get('company', {}).get('name', 'Your Company')
+        language = config.get('language', {}).get('primary', 'en')
+        role = config.get('system_prompt', {}).get('role', 'professional assistant')
+        instructions = config.get('system_prompt', {}).get('instructions', '')
+
+        # Format the template
+        prompt = instructions.format(
+            company_name=company_name,
+            language=language,
+            role=role
+        )
+
+        return prompt
+
+    @classmethod
+    def get_company_info(cls) -> Dict[str, Any]:
+        """Get company information from config."""
+        return cls.get('company', {})
+
+    @classmethod
+    def get_ui_config(cls) -> Dict[str, Any]:
+        """Get UI configuration."""
+        return cls.get('ui', {})
+
+    @classmethod
+    def get_data_config(cls) -> Dict[str, Any]:
+        """Get data source configuration."""
+        return cls.get('data', {})
 
     @classmethod
     def ensure_dirs(cls):
@@ -67,6 +210,9 @@ Regole importanti:
         cls.DATA_DIR.mkdir(parents=True, exist_ok=True)
         cls.INDICES_DIR.mkdir(parents=True, exist_ok=True)
         cls.DOCS_DIR.mkdir(parents=True, exist_ok=True)
+        cls.CLIENT_CONTENT_DIR.mkdir(parents=True, exist_ok=True)
+        cls.SAMPLE_DATA_DIR.mkdir(parents=True, exist_ok=True)
+        cls.EXAMPLES_DIR.mkdir(parents=True, exist_ok=True)
 
     @classmethod
     def get_api_key(cls) -> str:
@@ -78,3 +224,17 @@ Regole importanti:
                 "Please set it in .env file."
             )
         return api_key
+
+    @classmethod
+    def get_content_path(cls) -> Path:
+        """Get the primary content path for indexing."""
+        # Check config for custom input folder
+        input_folder = cls.get('data.input_folder', 'data/client_content')
+        content_dir = cls.PROJECT_ROOT / input_folder
+
+        # Backward compatibility: check for old content.txt
+        if cls.CONTENT_FILE.exists():
+            return cls.CONTENT_FILE
+
+        # Otherwise return the content directory
+        return content_dir

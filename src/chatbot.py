@@ -16,8 +16,8 @@ from dotenv import load_dotenv
 from .config import Config
 
 
-class TourChatbot:
-    """RAG chatbot for Viaggiare Bucarest tour assistance."""
+class RAGChatbot:
+    """RAG chatbot with configurable knowledge base and system prompt."""
 
     def __init__(
         self,
@@ -129,7 +129,7 @@ class TourChatbot:
             Tuple of (formatted_context, list_of_sources)
         """
         if not results:
-            return "Nessun contenuto rilevante trovato.", []
+            return "No relevant content found.", []
 
         context_parts = []
         sources = []
@@ -143,7 +143,7 @@ class TourChatbot:
                 sources.append(section)
 
             # Format context entry
-            context_parts.append(f"[Sezione: {section}]\n{text}\n")
+            context_parts.append(f"[Section: {section}]\n{text}\n")
 
         formatted_context = "\n---\n".join(context_parts)
         return formatted_context, sources
@@ -166,12 +166,12 @@ class TourChatbot:
         context, sources = self.format_context(retrieved)
 
         # Create user message with context
-        user_message = f"""Contesto dai documenti:
+        user_message = f"""Context from knowledge base:
 {context}
 
-Domanda dell'utente: {query}
+User question: {query}
 
-Fornisci una risposta completa basata sul contesto fornito."""
+Provide a complete answer based on the provided context."""
 
         # Call DeepSeek API
         try:
@@ -201,7 +201,7 @@ Fornisci una risposta completa basata sul contesto fornito."""
 
         except Exception as e:
             return {
-                'answer': f"Errore nella comunicazione con il servizio: {str(e)}",
+                'answer': f"Error communicating with service: {str(e)}",
                 'sources': [],
                 'query': query,
                 'error': str(e)
@@ -209,12 +209,17 @@ Fornisci una risposta completa basata sul contesto fornito."""
 
     def run_interactive(self):
         """Run interactive CLI chatbot."""
+        company_info = Config.get_company_info()
+        company_name = company_info.get('name', 'Knowledge Base')
+        description = company_info.get('description', '')
+
         print("=" * 70)
-        print("🇮🇹 VIAGGIARE BUCAREST - Assistente Virtuale")
+        print(f"{company_name} - AI Assistant")
         print("=" * 70)
-        print("Tour operator italiano in Romania dal 1991")
-        print("Fai domande sui nostri tour, prezzi, destinazioni...")
-        print("\nComandi: 'exit' per uscire, 'help' per aiuto\n")
+        if description:
+            print(description)
+        print("\nAsk questions about our knowledge base...")
+        print("\nCommands: 'exit' to quit, 'help' for examples\n")
 
         while True:
             try:
@@ -224,16 +229,16 @@ Fornisci una risposta completa basata sul contesto fornito."""
                 if not query:
                     continue
 
-                if query.lower() in ['exit', 'quit', 'esci']:
-                    print("\n👋 Grazie per averci contattato! Arrivederci!")
+                if query.lower() in ['exit', 'quit']:
+                    print("\n👋 Thank you! Goodbye!")
                     break
 
                 if query.lower() == 'help':
-                    print("\n📋 Esempi di domande:")
-                    print("  - Quanto costa il tour del Parlamento?")
-                    print("  - Come posso contattarvi?")
-                    print("  - Raccontami del tour al Castello di Dracula")
-                    print("  - Quali tour offrite?")
+                    print("\n📋 Example questions:")
+                    print("  - What services do you offer?")
+                    print("  - How can I contact you?")
+                    print("  - Tell me about your products")
+                    print("  - What are your pricing options?")
                     continue
 
                 # Process query
@@ -245,10 +250,14 @@ Fornisci una risposta completa basata sul contesto fornito."""
 
                 # Display sources
                 if result['sources']:
-                    print(f"\n📚 Fonti: {', '.join(result['sources'][:3])}")
+                    print(f"\n📚 Sources: {', '.join(result['sources'][:3])}")
 
             except KeyboardInterrupt:
-                print("\n\n👋 Arrivederci!")
+                print("\n\n👋 Goodbye!")
                 break
             except Exception as e:
-                print(f"\n❌ Errore: {e}")
+                print(f"\n❌ Error: {e}")
+
+
+# Backward compatibility alias
+TourChatbot = RAGChatbot

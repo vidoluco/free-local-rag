@@ -42,10 +42,43 @@ class LocalEmbeddingIndexer:
         print(f"✓ Model loaded (embedding dimension: {self.embedding_dim})")
 
     def load_content(self, content_path: str = None) -> str:
-        """Load raw content from text file."""
-        path = content_path or str(Config.CONTENT_FILE)
-        with open(path, 'r', encoding='utf-8') as f:
-            return f.read()
+        """
+        Load content from file or directory.
+
+        Supports single file or directory with multiple documents.
+        For directories, loads all supported formats and aggregates.
+        """
+        from pathlib import Path
+        from .loaders import DocumentLoader, ContentAggregator
+
+        # Use provided path or get from config
+        if content_path:
+            path = Path(content_path)
+        else:
+            path = Config.get_content_path()
+
+        # If it's a file, load directly
+        if path.is_file():
+            with open(path, 'r', encoding='utf-8') as f:
+                return f.read()
+
+        # If it's a directory, load all documents and aggregate
+        elif path.is_dir():
+            print(f"Loading documents from directory: {path}")
+            documents = DocumentLoader.load_directory(path)
+
+            if not documents:
+                raise FileNotFoundError(
+                    f"No supported documents found in {path}. "
+                    "Please add .txt, .pdf, .docx, or .md files."
+                )
+
+            print(f"Loaded {len(documents)} documents")
+            content = ContentAggregator.aggregate_documents(documents)
+            return content
+
+        else:
+            raise FileNotFoundError(f"Path not found: {path}")
 
     def chunk_by_sections(self, content: str) -> List[Dict[str, str]]:
         """

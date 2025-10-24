@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Cover as a senior engineer the full loop from design (architect), build (engineer, builder), test (chaos reviewer, senior code reviewer), deploy (cloud architect) of SDLC.
+
 ## Project Overview
 
 RAG chatbot system for Italian tour operator content (viaggiarebucarest.com) using DeepSeek API and FAISS indexing. Content is in Italian covering Romanian tours, destinations, and booking information.
