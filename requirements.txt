@@ -1,0 +1,19 @@
+# Web scraping
+requests==2.31.0
+beautifulsoup4==4.12.3
+lxml==5.1.0
+
+# For RAG system
+faiss-cpu==1.7.4
+numpy==1.26.4
+openai==1.12.0
+
+# Local embeddings (no API needed)
+sentence-transformers==2.2.2
+
+# Text processing
+tiktoken==0.6.0
+
+# Utilities
+python-dotenv==1.0.1
+tqdm==4.66.2

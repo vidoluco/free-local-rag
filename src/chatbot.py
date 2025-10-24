@@ -1,0 +1,254 @@
+"""
+RAG Chatbot with Local Embeddings + DeepSeek LLM
+
+Handles query embedding, FAISS retrieval, and chat completion.
+"""
+
+import json
+import pickle
+from typing import List, Dict, Tuple
+import numpy as np
+import faiss
+from sentence_transformers import SentenceTransformer
+from openai import OpenAI
+from dotenv import load_dotenv
+
+from .config import Config
+
+
+class TourChatbot:
+    """RAG chatbot for Viaggiare Bucarest tour assistance."""
+
+    def __init__(
+        self,
+        model_name: str = None,
+        top_k: int = None
+    ):
+        """
+        Initialize chatbot with FAISS index and DeepSeek API.
+
+        Args:
+            model_name: Sentence-transformers model (defaults to Config.EMBEDDING_MODEL)
+            top_k: Number of chunks to retrieve (defaults to Config.TOP_K)
+        """
+        self.model_name = model_name or Config.EMBEDDING_MODEL
+        self.top_k = top_k or Config.TOP_K
+
+        # Load environment variables
+        load_dotenv()
+
+        # Initialize DeepSeek client
+        self.api_key = Config.get_api_key()
+        self.client = OpenAI(
+            api_key=self.api_key,
+            base_url=Config.DEEPSEEK_BASE_URL
+        )
+
+        # Load local embedding model
+        print(f"Loading local embedding model: {self.model_name}")
+        self.embedding_model = SentenceTransformer(self.model_name)
+        print(f"✓ Embedding model loaded")
+
+        # Load FAISS index
+        print("Loading FAISS index...")
+        self.load_index()
+        print(f"✓ Index loaded with {self.index.ntotal} vectors\n")
+
+    def load_index(self):
+        """Load FAISS index, chunks, and metadata from indices/ directory."""
+        if not Config.FAISS_INDEX_FILE.exists():
+            raise FileNotFoundError(
+                f"FAISS index not found at {Config.FAISS_INDEX_FILE}. "
+                "Run build_index.py first."
+            )
+
+        # Load FAISS index
+        self.index = faiss.read_index(str(Config.FAISS_INDEX_FILE))
+
+        # Load chunks
+        with open(Config.CHUNKS_FILE, 'rb') as f:
+            self.chunks = pickle.load(f)
+
+        # Load metadata
+        with open(Config.METADATA_FILE, 'r', encoding='utf-8') as f:
+            self.metadata = json.load(f)
+
+    def embed_query(self, query: str) -> np.ndarray:
+        """Generate embedding for query using local model."""
+        embedding = self.embedding_model.encode(query, convert_to_numpy=True)
+        return embedding.astype(np.float32)
+
+    def retrieve(self, query: str) -> List[Dict]:
+        """
+        Retrieve top-k relevant chunks for query.
+
+        Args:
+            query: User's question
+
+        Returns:
+            List of dicts with 'text', 'section', 'score', 'distance'
+        """
+        # Generate query embedding locally
+        query_embedding = self.embed_query(query)
+
+        # Search FAISS index
+        distances, indices = self.index.search(
+            query_embedding.reshape(1, -1),
+            self.top_k
+        )
+
+        # Format results
+        results = []
+        for idx, (distance, chunk_idx) in enumerate(zip(distances[0], indices[0])):
+            if chunk_idx == -1:  # No more results
+                continue
+
+            chunk = self.chunks[chunk_idx]
+            # Convert L2 distance to similarity score
+            similarity = 1 / (1 + distance)
+
+            results.append({
+                'text': chunk['text'],
+                'section': chunk['section'],
+                'source': chunk['source'],
+                'score': float(similarity),
+                'distance': float(distance),
+                'rank': idx + 1
+            })
+
+        return results
+
+    def format_context(self, results: List[Dict]) -> Tuple[str, List[str]]:
+        """
+        Format retrieved chunks into context for LLM.
+
+        Args:
+            results: Retrieved chunks
+
+        Returns:
+            Tuple of (formatted_context, list_of_sources)
+        """
+        if not results:
+            return "Nessun contenuto rilevante trovato.", []
+
+        context_parts = []
+        sources = []
+
+        for result in results:
+            section = result['section']
+            text = result['text']
+
+            # Add source reference
+            if section not in sources:
+                sources.append(section)
+
+            # Format context entry
+            context_parts.append(f"[Sezione: {section}]\n{text}\n")
+
+        formatted_context = "\n---\n".join(context_parts)
+        return formatted_context, sources
+
+    def chat(self, query: str, show_context: bool = False) -> Dict:
+        """
+        Process user query through RAG pipeline.
+
+        Args:
+            query: User's question in Italian
+            show_context: Whether to return retrieved context (for debugging)
+
+        Returns:
+            Dict with 'answer', 'sources', optionally 'context' and 'retrieved_chunks'
+        """
+        # Retrieve relevant chunks
+        retrieved = self.retrieve(query)
+
+        # Format context
+        context, sources = self.format_context(retrieved)
+
+        # Create user message with context
+        user_message = f"""Contesto dai documenti:
+{context}
+
+Domanda dell'utente: {query}
+
+Fornisci una risposta completa basata sul contesto fornito."""
+
+        # Call DeepSeek API
+        try:
+            response = self.client.chat.completions.create(
+                model=Config.DEEPSEEK_MODEL,
+                messages=[
+                    {"role": "system", "content": Config.SYSTEM_PROMPT},
+                    {"role": "user", "content": user_message}
+                ],
+                temperature=Config.DEEPSEEK_TEMPERATURE,
+                max_tokens=Config.DEEPSEEK_MAX_TOKENS
+            )
+
+            answer = response.choices[0].message.content
+
+            result = {
+                'answer': answer,
+                'sources': sources,
+                'query': query
+            }
+
+            if show_context:
+                result['context'] = context
+                result['retrieved_chunks'] = retrieved
+
+            return result
+
+        except Exception as e:
+            return {
+                'answer': f"Errore nella comunicazione con il servizio: {str(e)}",
+                'sources': [],
+                'query': query,
+                'error': str(e)
+            }
+
+    def run_interactive(self):
+        """Run interactive CLI chatbot."""
+        print("=" * 70)
+        print("🇮🇹 VIAGGIARE BUCAREST - Assistente Virtuale")
+        print("=" * 70)
+        print("Tour operator italiano in Romania dal 1991")
+        print("Fai domande sui nostri tour, prezzi, destinazioni...")
+        print("\nComandi: 'exit' per uscire, 'help' per aiuto\n")
+
+        while True:
+            try:
+                # Get user input
+                query = input("\n💬 Tu: ").strip()
+
+                if not query:
+                    continue
+
+                if query.lower() in ['exit', 'quit', 'esci']:
+                    print("\n👋 Grazie per averci contattato! Arrivederci!")
+                    break
+
+                if query.lower() == 'help':
+                    print("\n📋 Esempi di domande:")
+                    print("  - Quanto costa il tour del Parlamento?")
+                    print("  - Come posso contattarvi?")
+                    print("  - Raccontami del tour al Castello di Dracula")
+                    print("  - Quali tour offrite?")
+                    continue
+
+                # Process query
+                print("\n🤖 Assistente: ", end="", flush=True)
+                result = self.chat(query)
+
+                # Display answer
+                print(result['answer'])
+
+                # Display sources
+                if result['sources']:
+                    print(f"\n📚 Fonti: {', '.join(result['sources'][:3])}")
+
+            except KeyboardInterrupt:
+                print("\n\n👋 Arrivederci!")
+                break
+            except Exception as e:
+                print(f"\n❌ Errore: {e}")

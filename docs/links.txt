@@ -1,0 +1,17 @@
+Studies and examples from market:
+
+https://yellow.ai/blog/chatbot-for-travel/
+https://www.microsoft.com/en-us/microsoft-cloud/blog/2025/07/24/ai-powered-success-with-1000-stories-of-customer-transformation-and-innovation/
+https://www.signitysolutions.com/blog/benefits-of-ai-chatbots
+
+Slides Stages -----
+
+Benefits 
+
+Drawbacks clearly showed
+
+OUR mitigation!!
+
+Q&A client profiling
+
+Data Pipeline streaming to RAG and proposing offers (trained on sales european data SME)

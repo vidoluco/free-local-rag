@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+.env/
+# Environment variables
+.env
+
+# Generated indices (can be rebuilt)
+indices/
+*.faiss
+*.pkl
+embeddings/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
