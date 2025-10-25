@@ -22,6 +22,7 @@ indices/
 *.pkl
 *.index
 embeddings/
+docs/
 
 # Client data (NEVER COMMIT - sensitive)
 data/client_content/*
