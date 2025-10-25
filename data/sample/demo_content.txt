@@ -1,0 +1,49 @@
+=== DOCUMENT: Company Overview ===
+
+We are a leading provider of innovative solutions in our industry.
+Founded in 2020, we serve clients worldwide with dedication to excellence.
+
+Our mission is to deliver exceptional value through cutting-edge technology
+and personalized service.
+
+Contact us:
+Email: demo@example.com
+Phone: +1-555-0123
+
+=== DOCUMENT: Services ===
+
+Our Services:
+
+1. Consulting Services
+   - Expert advice tailored to your needs
+   - Strategic planning and implementation
+   - Industry best practices
+
+2. Implementation Services
+   - Full-service deployment and integration
+   - Custom solutions development
+   - Training and onboarding
+
+3. Support Services
+   - 24/7 customer support with dedicated teams
+   - Ongoing maintenance and updates
+   - Proactive monitoring
+
+Pricing: Contact us for a custom quote based on your requirements.
+
+=== DOCUMENT: FAQ ===
+
+Q: What are your business hours?
+A: We operate Monday-Friday, 9 AM - 6 PM EST.
+
+Q: Do you offer international services?
+A: Yes, we serve clients globally with localized support in multiple languages.
+
+Q: How do I get started?
+A: Contact us via email or phone, and our team will guide you through the onboarding process.
+
+Q: What industries do you serve?
+A: We work with clients across technology, healthcare, finance, and manufacturing sectors.
+
+Q: Do you offer custom solutions?
+A: Absolutely! We specialize in tailoring our services to meet your specific business needs.

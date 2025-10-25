@@ -69,7 +69,7 @@ ui:
 
 # Data Sources
 data:
-  input_folder: "data/client_content"
+  input_folder: "data/sample"  # Use sample data for demo
   supported_formats:
     - "txt"
     - "pdf"

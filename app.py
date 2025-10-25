@@ -37,11 +37,13 @@ def load_chatbot():
     try:
         return RAGChatbot()
     except FileNotFoundError:
-        st.error("FAISS index not found. Please build the index first using scripts/build_index.py")
-        st.stop()
+        st.warning("⚠️ FAISS index not found. Please build the index first.")
+        st.info("👉 Go to **Admin Panel** → **Build Index** to create the knowledge base from your documents.")
+        return None
     except ValueError as e:
         st.error(f"Configuration error: {e}")
-        st.stop()
+        st.info("Please check your environment variables and config.yaml settings.")
+        return None
 
 
 def chat_interface():
@@ -58,6 +60,16 @@ def chat_interface():
 
     # Load chatbot
     chatbot = load_chatbot()
+
+    # If chatbot failed to load, show helpful message
+    if chatbot is None:
+        st.error("💡 **Getting Started:**")
+        st.write("1. Go to the **Admin Panel** (in sidebar)")
+        st.write("2. Click **Build Index** tab")
+        st.write("3. Click the 🔨 **Build Index** button")
+        st.write("4. Wait for indexing to complete")
+        st.write("5. Come back here to start chatting!")
+        return
 
     # Initialize chat history in session state
     if "messages" not in st.session_state:
