@@ -148,10 +148,19 @@ class Config:
     @classmethod
     @property
     def DEEPSEEK_BASE_URL(cls) -> str:
-        # Environment variable takes precedence
+        # Try Streamlit secrets first (for Streamlit Cloud)
+        try:
+            import streamlit as st
+            if "DEEPSEEK_API_BASE" in st.secrets:
+                return st.secrets["DEEPSEEK_API_BASE"]
+        except (ImportError, FileNotFoundError):
+            pass
+
+        # Fall back to environment variable
         env_url = os.getenv("DEEPSEEK_API_BASE")
         if env_url:
             return env_url
+
         return cls.get('llm.api_base', 'https://api.deepseek.com/v1')
 
     @classmethod
@@ -216,12 +225,28 @@ class Config:
 
     @classmethod
     def get_api_key(cls) -> str:
-        """Get DeepSeek API key from environment."""
+        """
+        Get DeepSeek API key from Streamlit secrets or environment.
+
+        Checks in order:
+        1. Streamlit secrets (st.secrets) - for Streamlit Cloud deployment
+        2. Environment variables (os.getenv) - for local development
+        """
+        # Try Streamlit secrets first (for Streamlit Cloud)
+        try:
+            import streamlit as st
+            if "DEEPSEEK_API_KEY" in st.secrets:
+                return st.secrets["DEEPSEEK_API_KEY"]
+        except (ImportError, FileNotFoundError):
+            # Streamlit not available or secrets not configured
+            pass
+
+        # Fall back to environment variable (for local development)
         api_key = os.getenv(cls.DEEPSEEK_API_KEY_ENV)
         if not api_key:
             raise ValueError(
-                f"{cls.DEEPSEEK_API_KEY_ENV} not found in environment. "
-                "Please set it in .env file."
+                f"{cls.DEEPSEEK_API_KEY_ENV} not found in Streamlit secrets or environment. "
+                "Please set it in Streamlit Cloud Settings → Secrets or in .env file."
             )
         return api_key
 
