@@ -73,11 +73,11 @@ class Config:
                 'dimension': 384
             },
             'llm': {
-                'provider': 'deepseek',
-                'model': 'deepseek-chat',
+                'provider': 'perplexity',
+                'model': 'sonar',
                 'temperature': 0.3,
                 'max_tokens': 500,
-                'api_base': 'https://api.deepseek.com/v1'
+                'api_base': 'https://api.perplexity.ai'
             },
             'ui': {
                 'title': 'Knowledge Base Assistant',
@@ -142,40 +142,40 @@ class Config:
     def BATCH_SIZE(cls) -> int:
         return cls.get('rag.batch_size', 32)
 
-    # DeepSeek API
-    DEEPSEEK_API_KEY_ENV = "DEEPSEEK_API_KEY"
+    # Perplexity API
+    PERPLEXITY_API_KEY_ENV = "PERPLEXITY_API_KEY"
 
     @classmethod
     @property
-    def DEEPSEEK_BASE_URL(cls) -> str:
+    def PERPLEXITY_BASE_URL(cls) -> str:
         # Try Streamlit secrets first (for Streamlit Cloud)
         try:
             import streamlit as st
-            if "DEEPSEEK_API_BASE" in st.secrets:
-                return st.secrets["DEEPSEEK_API_BASE"]
+            if "PERPLEXITY_API_BASE" in st.secrets:
+                return st.secrets["PERPLEXITY_API_BASE"]
         except (ImportError, FileNotFoundError):
             pass
 
         # Fall back to environment variable
-        env_url = os.getenv("DEEPSEEK_API_BASE")
+        env_url = os.getenv("PERPLEXITY_API_BASE")
         if env_url:
             return env_url
 
-        return cls.get('llm.api_base', 'https://api.deepseek.com/v1')
+        return cls.get('llm.api_base', 'https://api.perplexity.ai')
 
     @classmethod
     @property
-    def DEEPSEEK_MODEL(cls) -> str:
-        return cls.get('llm.model', 'deepseek-chat')
+    def PERPLEXITY_MODEL(cls) -> str:
+        return cls.get('llm.model', 'sonar')
 
     @classmethod
     @property
-    def DEEPSEEK_TEMPERATURE(cls) -> float:
+    def PERPLEXITY_TEMPERATURE(cls) -> float:
         return cls.get('llm.temperature', 0.3)
 
     @classmethod
     @property
-    def DEEPSEEK_MAX_TOKENS(cls) -> int:
+    def PERPLEXITY_MAX_TOKENS(cls) -> int:
         return cls.get('llm.max_tokens', 500)
 
     # System prompt - now dynamic
@@ -226,7 +226,7 @@ class Config:
     @classmethod
     def get_api_key(cls) -> str:
         """
-        Get DeepSeek API key from Streamlit secrets or environment.
+        Get Perplexity API key from Streamlit secrets or environment.
 
         Checks in order:
         1. Streamlit secrets (st.secrets) - for Streamlit Cloud deployment
@@ -235,17 +235,17 @@ class Config:
         # Try Streamlit secrets first (for Streamlit Cloud)
         try:
             import streamlit as st
-            if "DEEPSEEK_API_KEY" in st.secrets:
-                return st.secrets["DEEPSEEK_API_KEY"]
+            if "PERPLEXITY_API_KEY" in st.secrets:
+                return st.secrets["PERPLEXITY_API_KEY"]
         except (ImportError, FileNotFoundError):
             # Streamlit not available or secrets not configured
             pass
 
         # Fall back to environment variable (for local development)
-        api_key = os.getenv(cls.DEEPSEEK_API_KEY_ENV)
+        api_key = os.getenv(cls.PERPLEXITY_API_KEY_ENV)
         if not api_key:
             raise ValueError(
-                f"{cls.DEEPSEEK_API_KEY_ENV} not found in Streamlit secrets or environment. "
+                f"{cls.PERPLEXITY_API_KEY_ENV} not found in Streamlit secrets or environment. "
                 "Please set it in Streamlit Cloud Settings → Secrets or in .env file."
             )
         return api_key

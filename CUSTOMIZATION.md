@@ -123,11 +123,11 @@ rag:
 
 ```yaml
 llm:
-  provider: "deepseek"
-  model: "deepseek-chat"
+  provider: "perplexity"
+  model: "sonar"
   temperature: 0.3  # 0.0-1.0 (lower = more focused)
   max_tokens: 500  # Response length limit
-  api_base: "https://api.deepseek.com/v1"
+  api_base: "https://api.perplexity.ai"
 ```
 
 **Temperature Guide:**
@@ -171,9 +171,9 @@ data:
 ## Environment Variables (.env)
 
 ```bash
-# DeepSeek API Configuration
-DEEPSEEK_API_KEY=sk-your-api-key-here
-DEEPSEEK_API_BASE=https://api.deepseek.com/v1  # Optional override
+# Perplexity API Configuration
+PERPLEXITY_API_KEY=pplx-your-api-key-here
+PERPLEXITY_API_BASE=https://api.perplexity.ai  # Optional override
 ```
 
 **Security Notes:**

@@ -68,7 +68,7 @@ if [ ! -f ".env" ]; then
         cp .env.example .env
         echo "✓ .env file created from .env.example"
         echo ""
-        echo "⚠️  IMPORTANT: Edit .env and add your DEEPSEEK_API_KEY"
+        echo "⚠️  IMPORTANT: Edit .env and add your PERPLEXITY_API_KEY"
     else
         echo "⚠️  Warning: .env.example not found"
     fi
@@ -95,7 +95,7 @@ echo ""
 echo "1. Activate the virtual environment:"
 echo "   source venv/bin/activate"
 echo ""
-echo "2. Edit .env and add your DEEPSEEK_API_KEY"
+echo "2. Edit .env and add your PERPLEXITY_API_KEY"
 echo ""
 echo "3. Edit config.yaml with your company information"
 echo ""

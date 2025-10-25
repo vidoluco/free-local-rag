@@ -47,13 +47,13 @@ embedding:
   model: "paraphrase-multilingual-MiniLM-L12-v2"
   dimension: 384
 
-# LLM Configuration (DeepSeek)
+# LLM Configuration (Perplexity)
 llm:
-  provider: "deepseek"
-  model: "deepseek-chat"
+  provider: "perplexity"
+  model: "sonar"
   temperature: 0.3
   max_tokens: 500
-  api_base: "https://api.deepseek.com/v1"
+  api_base: "https://api.perplexity.ai"
 
 # Web UI Customization
 ui:

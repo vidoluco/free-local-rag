@@ -1,5 +1,5 @@
 """
-RAG Chatbot with Local Embeddings + DeepSeek LLM
+RAG Chatbot with Local Embeddings + Perplexity Sonar LLM
 
 Handles query embedding, FAISS retrieval, and chat completion.
 """
@@ -25,7 +25,7 @@ class RAGChatbot:
         top_k: int = None
     ):
         """
-        Initialize chatbot with FAISS index and DeepSeek API.
+        Initialize chatbot with FAISS index and Perplexity API.
 
         Args:
             model_name: Sentence-transformers model (defaults to Config.EMBEDDING_MODEL)
@@ -37,11 +37,11 @@ class RAGChatbot:
         # Load environment variables
         load_dotenv()
 
-        # Initialize DeepSeek client
+        # Initialize Perplexity client
         self.api_key = Config.get_api_key()
         self.client = OpenAI(
             api_key=self.api_key,
-            base_url=Config.DEEPSEEK_BASE_URL
+            base_url=Config.PERPLEXITY_BASE_URL
         )
 
         # Load local embedding model
@@ -148,13 +148,14 @@ class RAGChatbot:
         formatted_context = "\n---\n".join(context_parts)
         return formatted_context, sources
 
-    def chat(self, query: str, show_context: bool = False) -> Dict:
+    def chat(self, query: str, show_context: bool = False, custom_system_prompt: str = None) -> Dict:
         """
         Process user query through RAG pipeline.
 
         Args:
             query: User's question in Italian
             show_context: Whether to return retrieved context (for debugging)
+            custom_system_prompt: Optional custom system prompt to override Config.SYSTEM_PROMPT
 
         Returns:
             Dict with 'answer', 'sources', optionally 'context' and 'retrieved_chunks'
@@ -173,16 +174,19 @@ User question: {query}
 
 Provide a complete answer based on the provided context."""
 
-        # Call DeepSeek API
+        # Use custom prompt if provided, otherwise use config
+        system_prompt = custom_system_prompt if custom_system_prompt is not None else Config.SYSTEM_PROMPT
+
+        # Call Perplexity API
         try:
             response = self.client.chat.completions.create(
-                model=Config.DEEPSEEK_MODEL,
+                model=Config.PERPLEXITY_MODEL,
                 messages=[
-                    {"role": "system", "content": Config.SYSTEM_PROMPT},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message}
                 ],
-                temperature=Config.DEEPSEEK_TEMPERATURE,
-                max_tokens=Config.DEEPSEEK_MAX_TOKENS
+                temperature=Config.PERPLEXITY_TEMPERATURE,
+                max_tokens=Config.PERPLEXITY_MAX_TOKENS
             )
 
             answer = response.choices[0].message.content

@@ -26,12 +26,12 @@ This will:
 
 ### 2. Configure API Key
 
-Edit the `.env` file and add your DeepSeek API key:
+Edit the `.env` file and add your Perplexity API key:
 ```
-DEEPSEEK_API_KEY=sk-your-api-key-here
+PERPLEXITY_API_KEY=pplx-your-api-key-here
 ```
 
-Get your API key from: https://platform.deepseek.com
+Get your API key from: https://www.perplexity.ai/settings/api
 
 ### 3. Add Your Documents
 
@@ -133,7 +133,7 @@ Changes take effect after rebuilding the index.
 ### "FAISS index not found"
 **Solution**: Build the index first with `python3 scripts/build_index.py`
 
-### "DEEPSEEK_API_KEY not found"
+### "PERPLEXITY_API_KEY not found"
 **Solution**: Add your API key to the `.env` file
 
 ### "No documents found"

@@ -10,7 +10,7 @@ A production-ready, configurable RAG chatbot system that:
 - **Fully customizable** - Company branding, prompts, behavior via config.yaml
 - **Web & CLI interfaces** - Streamlit UI + command-line chatbot
 - **Multi-language ready** - Tested with English, Italian, and other languages
-- **Zero vendor lock-in** - Uses local embeddings + cost-effective DeepSeek API
+- **Zero vendor lock-in** - Uses local embeddings + cost-effective Perplexity API
 
 ## 🚀 Quick Start
 
@@ -25,7 +25,7 @@ cd essential-rag-system
 ```bash
 # Add your API key
 nano .env
-# DEEPSEEK_API_KEY=sk-your-key-here
+# PERPLEXITY_API_KEY=pplx-your-key-here
 
 # Customize for your client
 nano config.yaml
@@ -237,7 +237,7 @@ system_prompt:
 |-----------|-----------|-------|
 | **Embeddings** | sentence-transformers | Local, zero API cost |
 | **Vector Store** | FAISS | Fast exact search |
-| **LLM** | DeepSeek API | Cost-effective, OpenAI-compatible |
+| **LLM** | Perplexity Sonar | Cost-effective, OpenAI-compatible |
 | **Web UI** | Streamlit | Modern, responsive |
 | **Embedding Model** | paraphrase-multilingual-MiniLM-L12-v2 | 384 dimensions |
 | **Default Chunk Size** | 500 chars | With 50 char overlap |
@@ -263,7 +263,7 @@ Perfect for:
 
 - Python 3.8+
 - 2GB RAM minimum (4GB recommended)
-- DeepSeek API key (get from https://platform.deepseek.com)
+- Perplexity API key (get from https://www.perplexity.ai/settings/api)
 - ~500MB disk space for dependencies
 - Linux, macOS, or Windows with bash
 

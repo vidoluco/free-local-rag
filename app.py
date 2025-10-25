@@ -97,7 +97,13 @@ def chat_interface():
         # Get chatbot response
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                result = chatbot.chat(prompt, show_context=ui_config.get('show_retrieval_scores', False))
+                # Get custom prompt from session state if set
+                custom_prompt = st.session_state.get('custom_system_prompt')
+                result = chatbot.chat(
+                    prompt,
+                    show_context=ui_config.get('show_retrieval_scores', False),
+                    custom_system_prompt=custom_prompt
+                )
 
                 st.markdown(result['answer'])
 
@@ -124,7 +130,7 @@ def admin_panel():
     """Admin panel for document management."""
     st.title("Admin Panel")
 
-    tab1, tab2, tab3 = st.tabs(["📄 Upload Documents", "🔨 Build Index", "⚙️ Configuration"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📄 Upload Documents", "🔨 Build Index", "🤖 AI Prompt", "⚙️ Configuration"])
 
     with tab1:
         st.header("Upload Documents")
@@ -160,12 +166,39 @@ def admin_panel():
         # Show current index info
         if Config.METADATA_FILE.exists():
             import json
+            from datetime import datetime, timezone
+
             with open(Config.METADATA_FILE, 'r') as f:
                 metadata = json.load(f)
 
             st.info(f"Current index: {metadata.get('total_chunks', 0)} chunks")
-            st.write(f"Model: {metadata.get('model_name', 'Unknown')}")
-            st.write(f"Last updated: {Config.FAISS_INDEX_FILE.stat().st_mtime if Config.FAISS_INDEX_FILE.exists() else 'Never'}")
+            st.write(f"**Model:** {metadata.get('model_name', 'Unknown')}")
+
+            # Display timestamp if available
+            if 'build_timestamp' in metadata:
+                try:
+                    build_time = datetime.fromisoformat(metadata['build_timestamp'])
+                    now = datetime.now(timezone.utc)
+                    time_diff = now - build_time
+
+                    # Format human-readable time
+                    if time_diff.days > 0:
+                        time_ago = f"{time_diff.days} day{'s' if time_diff.days > 1 else ''} ago"
+                    elif time_diff.seconds >= 3600:
+                        hours = time_diff.seconds // 3600
+                        time_ago = f"{hours} hour{'s' if hours > 1 else ''} ago"
+                    elif time_diff.seconds >= 60:
+                        minutes = time_diff.seconds // 60
+                        time_ago = f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+                    else:
+                        time_ago = "just now"
+
+                    st.write(f"**Last indexed:** {time_ago}")
+                    st.caption(f"({build_time.strftime('%Y-%m-%d %H:%M:%S UTC')})")
+                except (ValueError, TypeError):
+                    st.write(f"**Last indexed:** {metadata.get('build_timestamp', 'Unknown')}")
+            else:
+                st.write("**Last indexed:** Unknown (rebuild to add timestamp)")
 
         if st.button("🔨 Build Index"):
             with st.spinner("Building index... This may take a few minutes."):
@@ -176,12 +209,64 @@ def admin_panel():
                     st.success("✅ Index built successfully!")
                     st.write(f"Total chunks: {result['total_chunks']}")
                     st.write(f"Embedding dimension: {result['embedding_dimension']}")
-                    st.warning("Please restart the app to use the new index.")
+                    st.info("♻️ Reloading app to use the new index...")
+
+                    # Clear cache and reload app
+                    st.cache_resource.clear()
+                    st.rerun()
 
                 except Exception as e:
                     st.error(f"❌ Error building index: {e}")
 
     with tab3:
+        st.header("AI System Prompt")
+        st.write("Customize the AI assistant's behavior by editing the system prompt.")
+
+        # Get default prompt from config
+        default_prompt = Config.SYSTEM_PROMPT
+
+        # Initialize session state for custom prompt if not exists
+        if 'custom_system_prompt' not in st.session_state:
+            st.session_state['custom_system_prompt'] = None
+
+        # Show current status
+        if st.session_state.get('custom_system_prompt'):
+            st.success("✅ Using custom prompt")
+        else:
+            st.info("ℹ️ Using default prompt from config.yaml")
+
+        # Text area for editing prompt
+        current_prompt = st.session_state.get('custom_system_prompt') or default_prompt
+        edited_prompt = st.text_area(
+            "System Prompt",
+            value=current_prompt,
+            height=300,
+            help="This prompt defines how the AI assistant behaves and responds to queries."
+        )
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if st.button("💾 Save Custom Prompt", use_container_width=True):
+                if edited_prompt.strip():
+                    st.session_state['custom_system_prompt'] = edited_prompt
+                    st.success("✅ Custom prompt saved! It will be used for all new queries.")
+                    st.rerun()
+                else:
+                    st.error("❌ Prompt cannot be empty")
+
+        with col2:
+            if st.button("🔄 Reset to Default", use_container_width=True):
+                st.session_state['custom_system_prompt'] = None
+                st.success("✅ Reset to default prompt from config.yaml")
+                st.rerun()
+
+        # Show preview of what's active
+        with st.expander("📋 Preview Active Prompt"):
+            active_prompt = st.session_state.get('custom_system_prompt') or default_prompt
+            st.code(active_prompt, language=None)
+
+    with tab4:
         st.header("Configuration")
 
         company_info = Config.get_company_info()

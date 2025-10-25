@@ -167,6 +167,8 @@ class LocalEmbeddingIndexer:
         embeddings: np.ndarray
     ):
         """Save FAISS index, chunks, and metadata to indices/ directory."""
+        from datetime import datetime, timezone
+
         Config.ensure_dirs()
 
         # Save FAISS index
@@ -185,7 +187,8 @@ class LocalEmbeddingIndexer:
             'model_name': self.model_name,
             'chunk_size': self.chunk_size,
             'chunk_overlap': self.chunk_overlap,
-            'sections': list(set([c['section'] for c in chunks]))
+            'sections': list(set([c['section'] for c in chunks])),
+            'build_timestamp': datetime.now(timezone.utc).isoformat()
         }
 
         with open(Config.METADATA_FILE, 'w', encoding='utf-8') as f:
